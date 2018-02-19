@@ -1,0 +1,13 @@
+name: migro
+version: 0.1.0
+
+authors:
+  - Alistair A. Israel <aisrael@gmail.com>
+
+targets:
+  migro:
+    main: src/migro.cr
+
+crystal: 0.24.1
+
+license: MIT
