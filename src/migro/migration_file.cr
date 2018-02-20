@@ -12,10 +12,10 @@ struct Migro::MigrationFile
   @extension : String?
 
   def initialize(@filename : String)
-    if /^(\d+-)?(.+)$/ =~ filename
+    if /^(\d+[-_])?(.+)$/ =~ filename
       prefix = $1?
       suffix = $2
-      @numeric_prefix = prefix.chomp("-") if prefix
+      @numeric_prefix = prefix[0...-1] if prefix
       @extension = suffix.split(".").last
       if @extension
         @text = suffix.chomp(".#{@extension}").not_nil!
