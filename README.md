@@ -1,4 +1,6 @@
 # migrō
+
+[![Join the chat at https://gitter.im/migro-io/migro](https://badges.gitter.im/migro-io/migro.svg)](https://gitter.im/migro-io/migro?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
  
 _(Latin) migrate_
 
