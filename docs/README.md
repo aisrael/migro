@@ -1,8 +1,8 @@
 # migrō
- 
+
 _(Latin) migrate_
 
-A relational database migration tool, written in Crystal.
+A relational database migration tool, written in Crystal. It uses the [cql](https://github.com/aisrael/cql) framework.
 
 ## Installation
 
@@ -14,6 +14,7 @@ Requirements:
 
 ```
 git clone https://github.com/aisrael/migro.git
+cd migro
 ```
 
 ##### Build the executable and place it in your $PATH
@@ -68,7 +69,7 @@ Which is equivalent to running the following SQL commands:
 
 ```
 CREATE TABLE users (id SERIAL NOT NULL PRIMARY KEY, username VARCHAR(40) NOT NULL, password_hash CHAR(128) NOT NULL);
-INSERT INTO users (username, password) VALUES ('system', 'b37e50cedcd3e3f1ff64f4afc0422084ae694253cf399326868e07a35f4a45fb');
+INSERT INTO users (username, password_hash) VALUES ('system', 'b37e50cedcd3e3f1ff64f4afc0422084ae694253cf399326868e07a35f4a45fb');
 ```
 
 ## Development
