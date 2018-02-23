@@ -15,6 +15,7 @@ license: MIT
 dependencies:
   cql:
     github: aisrael/cql
+    version: 0.1
   logging:
     github: aisrael/logging.cr
     version: 0.1

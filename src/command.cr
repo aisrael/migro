@@ -1,9 +1,23 @@
+struct Flag
+  getter :name
+  def initialize(@name : String)
+  end
+end
+
+struct FlagWithValue
+  getter :name
+  getter :value
+  def initialize(@name : String, @value : String?)
+  end
+end
+
 # An OptionPullParser lets you consume command line arguments
-# without having to know beforehand all possible
+# without having to know beforehand all possible options
 class OptionPullParser
   @args : Array(String)
   @allowed = [] of AllowedFlag
   getter :args
+  getter :allowed
 
   def initialize(@args = ARGV)
   end
@@ -20,19 +34,6 @@ class OptionPullParser
     end
   end
 
-  struct Flag
-    getter :name
-    def initialize(@name : String)
-    end
-  end
-
-  struct FlagWithValue
-    getter :name
-    getter :value
-    def initialize(@name : String, @value : String?)
-    end
-  end
-
   def flag(name : String, short : String? = nil, long : String? = nil, expects_value : Bool = false)
     @allowed << AllowedFlag.new(name, short, long || name, expects_value)
   end
@@ -41,7 +42,8 @@ class OptionPullParser
     @args.empty?
   end
 
-  def read : String | Flag | FlagWithValue
+  def read : String | Flag | FlagWithValue | Nil
+    return nil if @args.empty?
     arg = convert(@args.shift)
     case arg
     when FlagWithValue
@@ -59,7 +61,8 @@ class OptionPullParser
     arg
   end
 
-  def peek : String | Flag | FlagWithValue
+  def peek : String | Flag | FlagWithValue | Nil
+    return nil if @args.empty?
     convert(@args.first)
   end
 
@@ -91,12 +94,83 @@ class OptionPullParser
   end
 end
 
-class Command
+abstract class Command
+  @@commands = Hash(String | Symbol, Proc(Nil)).new
+  @@allowed = [] of OptionPullParser::AllowedFlag
+
   def self.version(version : String)
     @@version = version
   end
 
-  def short_description(desc : String)
+  def self.short_description(desc : String)
     @@short_description = desc
+  end
+
+  def self.flag(name : String, short : String? = nil, long : String? = nil, expects_value : Bool = false)
+    @@allowed << OptionPullParser::AllowedFlag.new(name, short, long || name, expects_value)
+  end
+
+  def self.command(name : String | Symbol, &block)
+    @@commands[name] = block
+  end
+
+  @@flags = Hash(String, Bool).new
+  class_getter :flags
+
+  @@options = Hash(String, String).new
+  class_getter :options
+
+  @command : (String | Symbol | Nil) = nil
+  @args = [] of String
+  getter :args
+
+
+  def initialize(@argv : Array(String))
+    @opp = OptionPullParser.new(@argv)
+    @@allowed.each do |flag|
+      @opp.allowed << flag
+    end
+  end
+
+  def self.run
+    self.new(ARGV).run
+  end
+
+  def run
+    while o = @opp.read
+      case o
+      when Flag
+        @@flags[o.name] = true
+      when FlagWithValue
+        @@options[o.name] = o.value.not_nil! unless o.value.nil?
+      else
+        handle_possible_command(o)
+      end
+    end
+    if @command
+      bl = @@commands[@command]
+      return call_with_self(&bl)
+    end
+  end
+
+  private def handle_possible_command(o)
+    if @command.nil?
+      key = o.to_s
+      stringified_keys = @@commands.keys.map(&.to_s)
+      if stringified_keys.includes?(key)
+        i = stringified_keys.index(key).not_nil!
+        @command =  @@commands.keys[i]
+        return
+      end
+    end
+    @args << o
+  end
+
+  private def call_with_self(&block)
+    with self yield
+  end
+
+  def read
+    @opp.read
   end
 end
