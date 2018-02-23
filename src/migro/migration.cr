@@ -24,30 +24,10 @@ abstract struct Migro::Migration
     abstract def execute(database : CQL::Database)
   end
 
-  struct CreateTable < Change
-    getter :table
-    def initialize(@table : CQL::Table)
-    end
-    def execute(database : CQL::Database)
-      database.create_table(@table).exec
-    end
-  end
 
   alias SQLType = String | Char | Int8 | Int32 | Int64
   alias InsertRow = Hash(String | Symbol, SQLType)
   alias InsertRows = Array(InsertRow)
-
-  struct Insert < Change
-    def initialize(@table_name : String, @rows : InsertRows)
-    end
-    def execute(database : CQL::Database)
-      @rows.each do |row|
-        column_names = row.keys.map(&.to_s)
-        values = column_names.map {|key| row[key] }
-        database.insert(@table_name).columns(column_names).exec(values)
-      end
-    end
-  end
 
   @@known_extensions = {} of String => Migro::Migration.class
   class_getter :known_extensions
@@ -75,4 +55,4 @@ struct Migro::MigrationLog
   end
 end
 
-require "./migration/yaml_migration"
+require "./migration/*"
