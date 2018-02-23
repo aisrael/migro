@@ -186,7 +186,9 @@ abstract class Command
       end
     end
     command = @command
-    unless command.nil?
+    if command.nil?
+      STDERR.puts %(Don't know how to handle "#{args.join(" ")}")
+    else
       return call_with_self(&command.block)
     end
   end

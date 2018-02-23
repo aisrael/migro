@@ -3,6 +3,9 @@ struct Migro::Migration::YamlMigration < Migro::Migration
   getter :changes
   getter :up
 
+  Migro::Migration.known_extensions["yaml"] = self.as(Migro::Migration.class)
+  Migro::Migration.known_extensions["yml"] = self.as(Migro::Migration.class)
+
   private def all_as_h(array : Array(YAML::Type)) : Array(Hash(YAML::Type, YAML::Type))
     array.map do |e|
       raise "Expecting Hash(YAML::Type, YAML::Type), got #{e.class}!" unless e.is_a?(Hash(YAML::Type, YAML::Type))
@@ -48,7 +51,6 @@ struct Migro::Migration::YamlMigration < Migro::Migration
         insert_rows = InsertRows.new
         if h.has_key?("rows")
           insert["rows"].each do |row|
-            p row: row
             if row.raw.is_a?(Hash(YAML::Type, YAML::Type))
               keys = row.as_h.keys.map(&.to_s)
               insert_row = InsertRow.new
