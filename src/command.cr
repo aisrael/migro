@@ -24,10 +24,11 @@ class OptionPullParser
 
   struct AllowedFlag
     getter :name
+    getter :description
     getter :short
     getter :long
     getter :expects_value
-    def initialize(@name : String, @short : String?, @long : String?, @expects_value : Bool = false)
+    def initialize(@name : String, @description : String?, @short : String?, @long : String?, @expects_value : Bool = false)
     end
     def expects_value?
       @expects_value
@@ -35,7 +36,7 @@ class OptionPullParser
   end
 
   def flag(name : String, short : String? = nil, long : String? = nil, expects_value : Bool = false)
-    @allowed << AllowedFlag.new(name, short, long || name, expects_value)
+    @allowed << AllowedFlag.new(name, nil, short, long || name, expects_value)
   end
 
   def empty? : Bool
@@ -95,7 +96,14 @@ class OptionPullParser
 end
 
 abstract class Command
-  @@commands = Hash(String | Symbol, Proc(Nil)).new
+
+  struct SubCommand
+    getter :name, :description, :block
+    def initialize(@name : String | Symbol, @description : String, @block : Proc(Nil))
+    end
+  end
+
+  @@sub_commands = Hash(String, SubCommand).new
   @@allowed = [] of OptionPullParser::AllowedFlag
 
   def self.short_description(desc : String)
@@ -104,17 +112,17 @@ abstract class Command
 
   def self.version(version : String)
     @@version = version
-    command(:version) do
+    command(:version, "Display the program version") do
       puts [@@short_description, "version #{@@version}"].compact.join(", ")
     end
   end
 
-  def self.flag(name : String, short : String? = nil, long : String? = nil, expects_value : Bool = false)
-    @@allowed << OptionPullParser::AllowedFlag.new(name, short, long || name, expects_value)
+  def self.flag(name : String, description : String, short : String? = nil, long : String? = nil, expects_value : Bool = false)
+    @@allowed << OptionPullParser::AllowedFlag.new(name, description, short, long || name, expects_value)
   end
 
-  def self.command(name : String | Symbol, &block)
-    @@commands[name] = block
+  def self.command(name : String | Symbol, description : String, &block)
+    @@sub_commands[name.to_s] = SubCommand.new(name, description, block)
   end
 
   @@flags = Hash(String, Bool).new
@@ -123,14 +131,42 @@ abstract class Command
   @@options = Hash(String, String).new
   class_getter :options
 
-  @command : (String | Symbol | Nil) = nil
+  @command : SubCommand?
   @args = [] of String
   getter :args
+
+  def command(name : String | Symbol, description : String, &block)
+    @@sub_commands[name.to_s] = SubCommand.new(name, description, block)
+  end
 
   def initialize(@argv : Array(String))
     @opp = OptionPullParser.new(@argv)
     @@allowed.each do |flag|
       @opp.allowed << flag
+    end
+    command :help, "Prints this help text" do
+      puts "#{@@short_description}, version #{@@version}"
+      puts <<-HEADER
+      Usage:
+        migro <command> [flags]
+
+      Commands:
+      HEADER
+      longest_key = @@sub_commands.keys.map(&.size).max
+      @@sub_commands.each do |key, command|
+        padding = Array.new(longest_key - key.size, " ").join
+        puts "  #{command.name}#{padding} - #{command.description}"
+      end
+      puts <<-FLAGS
+
+      Flags :
+      FLAGS
+      longest_flag = @@allowed.map {|f| (f.long || "").size}.max
+      @@allowed.each do |flag|
+        size = (flag.long || "").size
+        padding = Array.new(longest_flag - size, " ").join
+        puts "  #{flag.long}#{padding} - #{flag.description}"
+      end
     end
   end
 
@@ -149,30 +185,23 @@ abstract class Command
         handle_possible_command(o)
       end
     end
-    if @command
-      bl = @@commands[@command]
-      return call_with_self(&bl)
+    command = @command
+    unless command.nil?
+      return call_with_self(&command.block)
     end
   end
 
-  private def handle_possible_command(o)
+  private def handle_possible_command(key)
     if @command.nil?
-      key = o.to_s
-      stringified_keys = @@commands.keys.map(&.to_s)
-      if stringified_keys.includes?(key)
-        i = stringified_keys.index(key).not_nil!
-        @command =  @@commands.keys[i]
+      if @@sub_commands.has_key?(key)
+        @command =  @@sub_commands[key]
         return
       end
     end
-    @args << o
+    @args << key
   end
 
   private def call_with_self(&block)
     with self yield
-  end
-
-  def read
-    @opp.read
   end
 end
