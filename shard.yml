@@ -13,10 +13,10 @@ crystal: 0.24.1
 license: MIT
 
 dependencies:
+  cql:
+    github: aisrael/cql
   logging:
     github: aisrael/logging.cr
     version: 0.1
   pg:
     github: will/crystal-pg
-  cql:
-    github: aisrael/cql

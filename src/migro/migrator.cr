@@ -32,6 +32,17 @@ class Migro::Migrator
     @database = CQL.connect(@database_url)
   end
 
+  def up
+    check_and_ensure_migrations_log_table_exists
+    case result = verify_migration_log_integrity
+    when Failure
+      STDERR.puts result.message
+      exit 1
+    when Success
+      execute_new_migrations
+    end
+  end
+
   def scan_for_migrations
     Dir.children(@migration_files_dir_full_path).select do |name|
       /^(\d+-)?.+$/ =~ name
@@ -49,17 +60,6 @@ class Migro::Migrator
     @database.query_all("SELECT timestamp, filename, checksum FROM #{MIGRATIONS_LOG_TABLE} ORDER BY timestamp") do |rs|
       timestamp, filename, checksum = rs.read(Time, String, String)
       MigrationLog.new(timestamp, filename, checksum)
-    end
-  end
-
-  def execute
-    check_and_ensure_migrations_log_table_exists
-    case result = verify_migration_log_integrity
-    when Failure
-      STDERR.puts result.message
-      exit 1
-    when Success
-      execute_new_migrations
     end
   end
 
