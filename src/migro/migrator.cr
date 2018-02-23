@@ -23,8 +23,6 @@ class Migro::Migrator
 
   def initialize(@database_url : String, migrations_dir = DEFAULT_MIGRATIONS_DIR, logger = Logger.new(STDOUT))
     @migration_files_dir = migrations_dir
-    @logger = logger
-    @logger.level = Logger::DEBUG
     @migration_files_dir_full_path = File.expand_path(@migration_files_dir)
     raise %(Path #{@migration_files_dir_full_path} is not a directory!) unless File.directory?(@migration_files_dir_full_path)
     raise %(Path #{@migration_files_dir_full_path} cannot be read!) unless File.readable?(@migration_files_dir_full_path)
@@ -85,9 +83,9 @@ class Migro::Migrator
   private def load_migrations
     @migration_files.reduce([] of Migration) do |migrations, migration_file|
       full_path_to_file = File.join(@migration_files_dir_full_path, migration_file.filename)
-      case result = Migration.load_from_file(@logger, migration_file, full_path_to_file)
+      case result = Migration.load_from_file(migration_file, full_path_to_file)
       when Failure
-        @logger.error(result.message)
+        error(result.message)
       when Success
         migrations << result.value
       end
@@ -148,32 +146,9 @@ class Migro::Migrator
     end
   end
 
-  private def execute_change(change : Hash(YAML::Type, YAML::Type))
+  private def execute_change(change : Migration::Change)
     debug(change.inspect)
-    if change.has_key?("create_table")
-      table = CQL::Table.from_yaml(YAML::Any.new(change["create_table"]))
-      @database.create_table(table).exec
-    elsif change.has_key?("insert")
-      execute_insert(YAML::Any.new(change["insert"]))
-    end
-  end
-
-  private def execute_insert(insert)
-    h = insert.as_h
-    raise "insert: has no table: name specified!" unless h.has_key?("table")
-    table_name = insert["table"].as_s
-    return unless h.has_key?("rows")
-    rows = insert["rows"].as_a
-    rows.each do |row|
-      case row
-      when Hash(YAML::Type, YAML::Type)
-        column_names = row.keys.map(&.to_s)
-        values = column_names.map {|key| row[key] }
-        @database.insert(table_name).columns(column_names).exec(values)
-      else
-        raise "Don't know what to do with row of type #{row.class} (expecting Hash)"
-      end
-    end
+    change.execute(@database)
   end
 
   private def record_into_log(migration)
