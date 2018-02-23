@@ -32,6 +32,36 @@ class Migro::Migrator
     @database = CQL.connect(@database_url)
   end
 
+  {% for command in %w[up logs] %}
+    def self.{{command.id}}(database_url : String)
+      self.new(database_url).{{command.id}}
+    end
+  {% end %}
+
+  def up
+    check_and_ensure_migrations_log_table_exists
+    case result = verify_migration_log_integrity
+    when Failure
+      STDERR.puts result.message
+      exit 1
+    when Success
+      execute_new_migrations
+    end
+  end
+
+  def logs
+    check_and_ensure_migrations_log_table_exists
+    case result = verify_migration_log_integrity
+    when Failure
+      STDERR.puts result.message
+      exit 1
+    when Success
+      migrations_log.each do |log|
+        puts "#{Time::Format::ISO_8601_DATE_TIME.format(log.timestamp)} #{log.filename}"
+      end
+    end
+  end
+
   def scan_for_migrations
     Dir.children(@migration_files_dir_full_path).select do |name|
       /^(\d+-)?.+$/ =~ name
@@ -49,17 +79,6 @@ class Migro::Migrator
     @database.query_all("SELECT timestamp, filename, checksum FROM #{MIGRATIONS_LOG_TABLE} ORDER BY timestamp") do |rs|
       timestamp, filename, checksum = rs.read(Time, String, String)
       MigrationLog.new(timestamp, filename, checksum)
-    end
-  end
-
-  def execute
-    check_and_ensure_migrations_log_table_exists
-    case result = verify_migration_log_integrity
-    when Failure
-      STDERR.puts result.message
-      exit 1
-    when Success
-      execute_new_migrations
     end
   end
 
@@ -104,13 +123,17 @@ class Migro::Migrator
       if file.checksum != log.checksum
         return Result(Int32).failure(%(Migration file "#{log.filename}" has changed (expected checksum #{log.checksum} != #{file.checksum}), cowardly refusing to proceed))
       end
-      puts "#{Time::Format::ISO_8601_DATE_TIME.format(log.timestamp)} #{log.filename}"
     end
     Result.success(n)
   end
 
   private def execute_new_migrations
-    migrations[migrations_log.size..-1].each do |migration|
+    new_migrations = migrations[migrations_log.size..-1]
+    if new_migrations.empty?
+      puts "Database is up to date"
+      return
+    end
+    new_migrations.each do |migration|
       execute_migration(migration)
       record_into_log(migration)
     end
