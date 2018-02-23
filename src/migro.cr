@@ -23,6 +23,22 @@ class Main < Command
     end
     Migro::Migrator.logs(db_url)
   end
+  command :help do
+    puts <<-HELP
+    #{@@short_description}, version #{@@version}
+    Usage:
+
+      migro <command> [flags]
+
+    Commands:
+      up             - Executes all new migrations going 'up'
+      logs           - Displays the database migration log
+      help           - Prints this help text
+
+    Flags:
+      --database-url - Use the given database url. Defaults to $DATABASE_URL if not given
+    HELP
+  end
 end
 
 Main.run

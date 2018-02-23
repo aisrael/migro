@@ -98,12 +98,15 @@ abstract class Command
   @@commands = Hash(String | Symbol, Proc(Nil)).new
   @@allowed = [] of OptionPullParser::AllowedFlag
 
-  def self.version(version : String)
-    @@version = version
-  end
-
   def self.short_description(desc : String)
     @@short_description = desc
+  end
+
+  def self.version(version : String)
+    @@version = version
+    command(:version) do
+      puts [@@short_description, "version #{@@version}"].compact.join(", ")
+    end
   end
 
   def self.flag(name : String, short : String? = nil, long : String? = nil, expects_value : Bool = false)
@@ -123,7 +126,6 @@ abstract class Command
   @command : (String | Symbol | Nil) = nil
   @args = [] of String
   getter :args
-
 
   def initialize(@argv : Array(String))
     @opp = OptionPullParser.new(@argv)
