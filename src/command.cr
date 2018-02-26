@@ -1,225 +1,87 @@
-struct Flag
-  getter :name
-  def initialize(@name : String)
-  end
-end
+require "./option_pull_parser"
 
-struct FlagWithValue
-  getter :name
-  getter :value
-  def initialize(@name : String, @value : String?)
-  end
-end
-
-# An OptionPullParser lets you consume command line arguments
-# without having to know beforehand all possible options
-class OptionPullParser
-  @args : Array(String)
-  @allowed = [] of AllowedFlag
-  getter :args
-  getter :allowed
-
-  def initialize(@args = ARGV)
-  end
-
-  struct AllowedFlag
-    getter :name
-    getter :description
-    getter :short
-    getter :long
-    getter :expects_value
-    def initialize(@name : String, @description : String?, @short : String?, @long : String?, @expects_value : Bool = false)
-    end
-    def expects_value?
-      @expects_value
-    end
-  end
-
-  def flag(name : String, short : String? = nil, long : String? = nil, expects_value : Bool = false)
-    @allowed << AllowedFlag.new(name, nil, short, long || name, expects_value)
-  end
-
-  def empty? : Bool
-    @args.empty?
-  end
-
-  def read : String | Flag | FlagWithValue | Nil
-    return nil if @args.empty?
-    arg = convert(@args.shift)
-    case arg
-    when FlagWithValue
-      if arg.value.nil?
-        next_token = peek
-        case next_token
-        when String
-          return FlagWithValue.new(arg.name, @args.shift)
-        else
-          puts "Expecting value for --#{arg.name}"
-          exit 1
-        end
-      end
-    end
-    arg
-  end
-
-  def peek : String | Flag | FlagWithValue | Nil
-    return nil if @args.empty?
-    convert(@args.first)
-  end
-
-  private def convert(s)
-    case s
-    when /^--(\S+)/ # --long
-      raw = $1
-      i = raw.index("=")
-      if i
-        long = raw[0...i]
-        value = raw[(i+1)..-1]
-      else
-        long = raw
-      end
-      if found = @allowed.find { |af| af.long == long }
-        if found.expects_value?
-          return FlagWithValue.new(found.name, value)
-        else
-          return Flag.new(found.name)
-        end
-      end
-    when /^-(\S+)/ # -s or short
-      short = $1
-      if found = @allowed.find { |af| af.short == short }
-        return Flag.new(found.name)
-      end
-    end
-    s
+struct SubCommand
+  getter :name, :clazz, :description
+  def initialize(@name : String, @clazz : Command.class, @description : String)
   end
 end
 
 abstract class Command
 
-  @@version : String?
-  def self.version(version : String)
-    @@version = version
+  def args : Array(String)
+    [] of String
   end
 
-  struct SubCommand
-    getter :name, :clazz, :description, :block
-    def initialize(@name : String | Symbol, @clazz : Command.class, @description : String, @block : Proc(Nil))
-    end
+  def options : Hash(String, String)
+    {} of String => String
   end
 
-  @@sub_commands = Hash(String, SubCommand).new
-  @@allowed = [] of OptionPullParser::AllowedFlag
-
-  def self.short_description(desc : String)
-    @@short_description = desc
-  end
-
-  class Version < Command
-    def run
-      puts [@@short_description, "version #{@@version}"].compact.join(", ")
-    end
-  end
-
-  command :version, Version, "Display the program version"
-
-  def self.flag(name : String, description : String, short : String? = nil, long : String? = nil, expects_value : Bool = false)
-    @@allowed << OptionPullParser::AllowedFlag.new(name, description, short, long || name, expects_value)
-  end
-
-  def self.command(name : Symbol, clazz : C, description : String) forall C
-    command(name, clazz, description) {}
-  end
-
-  def self.command(name : Symbol, clazz : C, description : String, &block) forall C
-    @@sub_commands[name.to_s] = SubCommand.new(name, clazz, description, block)
-  end
-
-  @command : SubCommand?
-  @args = [] of String
-  @flags = Hash(String, Bool).new
-  @options = Hash(String, String).new
-  getter :args
-  getter :flags
-  getter :options
-
-  # def command(name : String | Symbol, description : String)
-  #   @@sub_commands[name.to_s] = SubCommand.new(name, description, block)
-  # end
-  # def command(name : String | Symbol, description : String, &block)
-  #   @@sub_commands[name.to_s] = SubCommand.new(name, description, block)
-  # end
-
-  class Help < Command
-    def run
-      puts "#{@@short_description}, version #{@@version}"
-      puts <<-HEADER
-      Usage:
-        migro <command> [flags]
-
-      Commands:
-      HEADER
-      longest_key = @@sub_commands.keys.map(&.size).max
-      @@sub_commands.each do |key, command|
-        padding = Array.new(longest_key - key.size, " ").join
-        puts "  #{command.name}#{padding} - #{command.description}"
-      end
-      puts <<-FLAGS
-
-      Flags :
-      FLAGS
-      longest_flag = @@allowed.map {|f| (f.long || "").size}.max
-      @@allowed.each do |flag|
-        size = (flag.long || "").size
-        padding = Array.new(longest_flag - size, " ").join
-        puts "  #{flag.long}#{padding} - #{flag.description}"
-      end
-    end
-  end
-
-  def initialize(@argv : Array(String))
-    @opp = OptionPullParser.new(@argv)
-    @@allowed.each do |flag|
-      @opp.allowed << flag
-    end
-    self.class.command :help, Help, "Prints this help text"
-  end
-
-  def self.run
-    self.new(ARGV).exec
+  def initialize
   end
 
   abstract def run
 
-  def exec
-    while o = @opp.read
-      case o
-      when Flag
-        @flags[o.name] = true
-      when FlagWithValue
-        @options[o.name] = o.value.not_nil! unless o.value.nil?
+  class Main
+
+    @@subcommands = {} of String => SubCommand
+
+    def self.command(**args)
+      name, clazz = args.to_a.first
+      raise "clazz is a #{clazz.class}, expecting Class" if clazz.is_a?(String)
+      command(name.to_s, clazz, args[:description] || name.to_s)
+    end
+
+    def self.command(name : String, clazz : C, description : String) forall C
+      p name: name
+      p clazz: clazz
+      sub = SubCommand.new(name, clazz, description)
+      @@subcommands[name.to_s] = sub
+    end
+
+    def self.run
+      self.new(OptionPullParser.new(ARGV)).run
+    end
+
+    @opp : OptionPullParser
+    @args = [] of String
+    @flags = Hash(String, Bool).new
+    @options = Hash(String, String).new
+    @command : SubCommand?
+    getter :args, :flags, :options
+
+    def initialize(@opp : OptionPullParser)
+    end
+
+    def run
+      while o = @opp.read
+        case o
+        when Flag
+          @flags[o.name] = true
+        when FlagWithValue
+          @options[o.name] = o.value.not_nil! unless o.value.nil?
+        else
+          handle_possible_command(o)
+        end
+      end
+      cmd = @command
+      p cmd: cmd
+      if cmd.nil?
+        STDERR.puts %(Don't know how to handle "#{args.join(" ")}")
       else
-        handle_possible_command(o)
+        p args: args
+        clazz = cmd.clazz
+        p clazz: clazz
+        clazz.new.run
       end
     end
-    command = @command
-    p command: command
-    if command.nil?
-      STDERR.puts %(Don't know how to handle "#{args.join(" ")}")
-    else
-      p args: args
-      command.clazz.new(args).run
-    end
-  end
 
-  private def handle_possible_command(key)
-    if @command.nil?
-      if @@sub_commands.has_key?(key)
-        @command =  @@sub_commands[key]
-        return
+    private def handle_possible_command(key)
+      if @command.nil?
+        if @@subcommands.has_key?(key)
+          return @command = @@subcommands[key]
+        end
       end
-    end
-    @args << key
+      @args << key
+   end
   end
-
 end
