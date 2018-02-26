@@ -43,6 +43,9 @@ struct Migro::Migration::YamlMigration < Migro::Migration
       if change_as_h.has_key?("create_table")
         table = CQL::Table.from_yaml(change["create_table"])
         result << CreateTable.new(table)
+      elsif change_as_h.has_key?("sql")
+        sql = change["sql"].as_s
+        result << Sql.new(sql)
       elsif change_as_h.has_key?("insert")
         insert = change["insert"]
         h = change["insert"].as_h
