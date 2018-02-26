@@ -9,7 +9,7 @@ class Main < Command::Main
   # flag "database-url",
   #       description: "Use the given database url. Defaults to $DATABASE_URL if not given",
   #       expects_value: true
-  command new: New, description: "Creates a new migration file"
+  # command new: New, description: "Creates a new migration file"
   command up: Up, description: "Executes all new migrations going 'up'"
   command logs: Logs, description: "Displays the database migration log"
 
@@ -31,7 +31,7 @@ class Main < Command::Main
     end
   end
 
-  class Logs < Command
+  class Logs < ::Command
     def run
       db_url = options["database-url"]? || ENV["DATABASE_URL"]?
       p db_url: db_url
