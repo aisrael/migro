@@ -24,7 +24,6 @@ abstract struct Migro::Migration
     abstract def execute(database : CQL::Database)
   end
 
-
   alias SQLType = String | Char | Int8 | Int32 | Int64
   alias InsertRow = Hash(String | Symbol, SQLType)
   alias InsertRows = Array(InsertRow)
