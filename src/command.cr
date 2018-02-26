@@ -97,9 +97,14 @@ end
 
 abstract class Command
 
+  @@version : String?
+  def self.version(version : String)
+    @@version = version
+  end
+
   struct SubCommand
-    getter :name, :description, :block
-    def initialize(@name : String | Symbol, @description : String, @block : Proc(Command, Nil))
+    getter :name, :clazz, :description, :block
+    def initialize(@name : String | Symbol, @clazz : Command.class, @description : String, @block : Proc(Nil))
     end
   end
 
@@ -110,23 +115,25 @@ abstract class Command
     @@short_description = desc
   end
 
-  def self.version(version : String)
-    @@version = version
-    command(version: "Display the program version") do |cmd|
+  class Version < Command
+    def run
       puts [@@short_description, "version #{@@version}"].compact.join(", ")
     end
   end
+
+  command :version, Version, "Display the program version"
 
   def self.flag(name : String, description : String, short : String? = nil, long : String? = nil, expects_value : Bool = false)
     @@allowed << OptionPullParser::AllowedFlag.new(name, description, short, long || name, expects_value)
   end
 
-  def self.command(**args, &block : Command -> )
-    name, description = args.to_a.first
-    @@sub_commands[name.to_s] = SubCommand.new(name, description, block)
+  def self.command(name : Symbol, clazz : C, description : String) forall C
+    command(name, clazz, description) {}
   end
 
-
+  def self.command(name : Symbol, clazz : C, description : String, &block) forall C
+    @@sub_commands[name.to_s] = SubCommand.new(name, clazz, description, block)
+  end
 
   @command : SubCommand?
   @args = [] of String
@@ -136,16 +143,15 @@ abstract class Command
   getter :flags
   getter :options
 
-  def command(name : String | Symbol, description : String, &block)
-    @@sub_commands[name.to_s] = SubCommand.new(name, description, block)
-  end
+  # def command(name : String | Symbol, description : String)
+  #   @@sub_commands[name.to_s] = SubCommand.new(name, description, block)
+  # end
+  # def command(name : String | Symbol, description : String, &block)
+  #   @@sub_commands[name.to_s] = SubCommand.new(name, description, block)
+  # end
 
-  def initialize(@argv : Array(String))
-    @opp = OptionPullParser.new(@argv)
-    @@allowed.each do |flag|
-      @opp.allowed << flag
-    end
-    self.class.command help: "Prints this help text" do
+  class Help < Command
+    def run
       puts "#{@@short_description}, version #{@@version}"
       puts <<-HEADER
       Usage:
@@ -171,11 +177,21 @@ abstract class Command
     end
   end
 
-  def self.run
-    self.new(ARGV).run
+  def initialize(@argv : Array(String))
+    @opp = OptionPullParser.new(@argv)
+    @@allowed.each do |flag|
+      @opp.allowed << flag
+    end
+    self.class.command :help, Help, "Prints this help text"
   end
 
-  def run
+  def self.run
+    self.new(ARGV).exec
+  end
+
+  abstract def run
+
+  def exec
     while o = @opp.read
       case o
       when Flag
@@ -187,10 +203,12 @@ abstract class Command
       end
     end
     command = @command
+    p command: command
     if command.nil?
       STDERR.puts %(Don't know how to handle "#{args.join(" ")}")
     else
-      return command.block.call(self)
+      p args: args
+      command.clazz.new(args).run
     end
   end
 
