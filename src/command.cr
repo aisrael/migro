@@ -99,7 +99,7 @@ abstract class Command
 
   struct SubCommand
     getter :name, :description, :block
-    def initialize(@name : String | Symbol, @description : String, @block : Proc(Nil))
+    def initialize(@name : String | Symbol, @description : String, @block : Proc(Command, Nil))
     end
   end
 
@@ -112,7 +112,7 @@ abstract class Command
 
   def self.version(version : String)
     @@version = version
-    command(:version, "Display the program version") do
+    command(version: "Display the program version") do |cmd|
       puts [@@short_description, "version #{@@version}"].compact.join(", ")
     end
   end
@@ -121,19 +121,20 @@ abstract class Command
     @@allowed << OptionPullParser::AllowedFlag.new(name, description, short, long || name, expects_value)
   end
 
-  def self.command(name : String | Symbol, description : String, &block)
+  def self.command(**args, &block : Command -> )
+    name, description = args.to_a.first
     @@sub_commands[name.to_s] = SubCommand.new(name, description, block)
   end
 
-  @@flags = Hash(String, Bool).new
-  class_getter :flags
 
-  @@options = Hash(String, String).new
-  class_getter :options
 
   @command : SubCommand?
   @args = [] of String
+  @flags = Hash(String, Bool).new
+  @options = Hash(String, String).new
   getter :args
+  getter :flags
+  getter :options
 
   def command(name : String | Symbol, description : String, &block)
     @@sub_commands[name.to_s] = SubCommand.new(name, description, block)
@@ -144,7 +145,7 @@ abstract class Command
     @@allowed.each do |flag|
       @opp.allowed << flag
     end
-    command :help, "Prints this help text" do
+    self.class.command help: "Prints this help text" do
       puts "#{@@short_description}, version #{@@version}"
       puts <<-HEADER
       Usage:
@@ -178,9 +179,9 @@ abstract class Command
     while o = @opp.read
       case o
       when Flag
-        @@flags[o.name] = true
+        @flags[o.name] = true
       when FlagWithValue
-        @@options[o.name] = o.value.not_nil! unless o.value.nil?
+        @options[o.name] = o.value.not_nil! unless o.value.nil?
       else
         handle_possible_command(o)
       end
@@ -189,7 +190,7 @@ abstract class Command
     if command.nil?
       STDERR.puts %(Don't know how to handle "#{args.join(" ")}")
     else
-      return call_with_self(&command.block)
+      return command.block.call(self)
     end
   end
 
@@ -203,7 +204,4 @@ abstract class Command
     @args << key
   end
 
-  private def call_with_self(&block)
-    with self yield
-  end
 end
