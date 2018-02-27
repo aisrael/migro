@@ -34,7 +34,6 @@ class Main < Command::Main
   class Logs < ::Command
     def run
       db_url = options["database-url"]? || ENV["DATABASE_URL"]?
-      p db_url: db_url
       unless db_url
         STDERR.puts "No --database-url flag given and no $DATABASE_URL environment variable defined!"
         exit 1
