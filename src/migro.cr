@@ -6,9 +6,9 @@ class Main < Command::Main
   short_description "migrō - a database migration tool"
   version "0.2"
 
-  # flag "database-url",
-  #       description: "Use the given database url. Defaults to $DATABASE_URL if not given",
-  #       expects_value: true
+  flag "database-url",
+        description: "Use the given database url. Defaults to $DATABASE_URL if not given",
+        expects_value: true
   # command new: New, description: "Creates a new migration file"
   command up: Up, description: "Executes all new migrations going 'up'"
   command logs: Logs, description: "Displays the database migration log", alias: "log"

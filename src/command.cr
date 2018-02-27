@@ -25,7 +25,20 @@ abstract class Command
 
   class Main < Command
 
-    @@SubCommandDecls = {} of String => SubCommandDecl
+    @@subcommands = {} of String => SubCommandDecl
+    class_getter :subcommands
+    def subcommands
+      @@subcommands
+    end
+
+    @@allowed = [] of OptionPullParser::AllowedFlag
+    class_getter :allowed
+    def self.flag(name : String, description : String, expects_value : Bool? = false)
+      @@allowed << OptionPullParser::AllowedFlag.new(name, description, nil, name, expects_value)
+    end
+    def allowed
+      @@allowed
+    end
 
     @@short_description : String? = nil
     class_getter :short_description
@@ -62,8 +75,8 @@ abstract class Command
 
     def self.command(name : String, clazz : C, description : String, alias aliaz : String? = nil) forall C
       sub = SubCommandDecl.new(name, clazz, description, aliaz)
-      @@SubCommandDecls[name.to_s] = sub
-      @@SubCommandDecls[aliaz.to_s] = sub if aliaz
+      @@subcommands[name.to_s] = sub
+      @@subcommands[aliaz.to_s] = sub if aliaz
     end
 
     def self.run
@@ -79,6 +92,7 @@ abstract class Command
 
     def initialize(@parent : Command?)
       @opp = OptionPullParser.new(ARGV)
+      self.class.command "help", Help, "Prints this help text"
     end
 
     def run
@@ -101,10 +115,42 @@ abstract class Command
       end
     end
 
+    class Help < Command
+      def run
+        if !parent.nil? && parent.is_a?(Command::Main)
+          main = parent.as(Command::Main)
+          puts "#{main.short_description}, version #{main.version}"
+          puts <<-HEADER
+          Usage:
+            migro <command> [flags]
+
+          Commands:
+          HEADER
+          subcommands = main.class.subcommands.values.uniq
+          longest_key = subcommands.map(&.name.size).max
+          subcommands.each do |command|
+            padding = Array.new(longest_key - command.name.size, " ").join
+            puts "  #{command.name}#{padding} - #{command.description}"
+          end
+          puts <<-FLAGS
+
+          Flags :
+          FLAGS
+          allowed = main.class.allowed
+          longest_flag = allowed.map {|f| (f.long || "").size}.max
+          allowed.each do |flag|
+            size = (flag.long || "").size
+            padding = Array.new(longest_flag - size, " ").join
+            puts "  --#{flag.long}#{padding} - #{flag.description}"
+          end
+        end
+      end
+    end
+
     private def handle_possible_command(key)
       if @command.nil?
-        if @@SubCommandDecls.has_key?(key)
-          return @command = @@SubCommandDecls[key]
+        if @@subcommands.has_key?(key)
+          return @command = @@subcommands[key]
         end
       end
       @args << key
