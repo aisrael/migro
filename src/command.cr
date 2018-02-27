@@ -8,18 +8,23 @@ end
 
 abstract class Command
 
-  def args : Array(String)
-    [] of String
+  struct Env
+    @args = [] of String
+    @flags = {} of String => Bool
+    @options = {} of String => String
+    getter :args, :flags, :options
   end
 
-  def options : Hash(String, String)
-    {} of String => String
+
+  @parent : Command?
+  getter :env, :parent
+
+  def initialize(@env : Env, @parent : Command?)
   end
 
-  getter :parent
-
-  def initialize(@parent : Command?)
-  end
+  delegate :args, to: @env
+  delegate :flags, to: @env
+  delegate :options, to: @env
 
   abstract def run
 
@@ -80,18 +85,16 @@ abstract class Command
     end
 
     def self.run
-      self.new(nil).run
+      self.new(Env.new, nil).run
     end
 
-    @opp : OptionPullParser
-    @args = [] of String
-    @flags = Hash(String, Bool).new
-    @options = Hash(String, String).new
     @command : SubCommandDecl?
-    getter :args, :flags, :options
 
-    def initialize(@parent : Command?)
+    def initialize(@env : Env, @parent : Command?)
       @opp = OptionPullParser.new(ARGV)
+      @@allowed.each do |allowed|
+        @opp.allowed << allowed
+      end
       self.class.command "help", Help, "Prints this help text"
     end
 
@@ -99,9 +102,9 @@ abstract class Command
       while o = @opp.read
         case o
         when Flag
-          @flags[o.name] = true
+          flags[o.name] = true
         when FlagWithValue
-          @options[o.name] = o.value.not_nil! unless o.value.nil?
+          options[o.name] = o.value.not_nil! unless o.value.nil?
         else
           handle_possible_command(o)
         end
@@ -111,7 +114,7 @@ abstract class Command
         STDERR.puts %(Don't know how to handle "#{args.join(" ")}")
       else
         clazz = cmd.clazz
-        clazz.new(self).run
+        clazz.new(env, self).run
       end
     end
 
@@ -153,7 +156,7 @@ abstract class Command
           return @command = @@subcommands[key]
         end
       end
-      @args << key
+      args << key
    end
   end
 end
