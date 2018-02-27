@@ -1,8 +1,8 @@
 require "./option_pull_parser"
 
 struct SubCommandDecl
-  getter :name, :clazz, :description
-  def initialize(@name : String, @clazz : ::Command.class, @description : String)
+  getter :name, :clazz, :description, :alias
+  def initialize(@name : String, @clazz : ::Command.class, @description : String, @alias : String? = nil)
   end
 end
 
@@ -16,6 +16,8 @@ abstract class Command
     {} of String => String
   end
 
+  getter :parent
+
   def initialize(@parent : Command?)
   end
 
@@ -25,18 +27,43 @@ abstract class Command
 
     @@SubCommandDecls = {} of String => SubCommandDecl
 
-    def self.command(**args)
-      name, clazz = args.to_a.first
-      puts "clazz => #{clazz} (#{clazz.class})"
-      raise "clazz is a #{clazz.class}, expecting Class" if clazz.is_a?(String)
-      command(name.to_s, clazz, args[:description] || name.to_s)
+    @@short_description : String? = nil
+    class_getter :short_description
+    def short_description : String?
+      @@short_description
+    end
+    def self.short_description(description : String)
+      @@short_description = description
     end
 
-    def self.command(name : String, clazz : C, description : String) forall C
-      p name: name
-      p clazz: clazz
-      sub = SubCommandDecl.new(name, clazz, description)
+    @@version : String? = nil
+    class_getter :version
+    def version : String?
+      @@version
+    end
+    class Version < Command
+      def run
+        if !parent.nil? && parent.is_a?(Command::Main)
+          main = parent.as(Command::Main)
+          puts [main.short_description, main.version].compact.join(", ")
+        end
+      end
+    end
+    def self.version(v : String)
+      @@version = v
+      command("version", Version, "displays the program version")
+    end
+
+    def self.command(**args)
+      name, clazz = args.to_a.first
+      raise "clazz is a #{clazz.class}, expecting Class" if clazz.is_a?(String)
+      command(name.to_s, clazz, args[:description] || name.to_s, args[:alias]?)
+    end
+
+    def self.command(name : String, clazz : C, description : String, alias aliaz : String? = nil) forall C
+      sub = SubCommandDecl.new(name, clazz, description, aliaz)
       @@SubCommandDecls[name.to_s] = sub
+      @@SubCommandDecls[aliaz.to_s] = sub if aliaz
     end
 
     def self.run
@@ -66,13 +93,10 @@ abstract class Command
         end
       end
       cmd = @command
-      p cmd: cmd
       if cmd.nil?
         STDERR.puts %(Don't know how to handle "#{args.join(" ")}")
       else
-        p args: args
         clazz = cmd.clazz
-        p clazz: clazz
         clazz.new(self).run
       end
     end
