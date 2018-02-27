@@ -6,6 +6,12 @@ A relational database migration tool, written in Crystal. It uses the [cql](http
 
 ## Installation
 
+#### Downloading a release version
+
+Download the latest release from [github.com/aisrael/migro/releases](https://github.com/aisrael/migro/releases) and place the `migro` executable in your path.
+
+#### Alternatively, build `migro` from source
+
 Requirements:
 
 * [Crystal](https://crystal-lang.org/) (currently built & tested using 0.24.1)
@@ -23,7 +29,7 @@ cd migro
 shards build --release
 ```
 
-That will build `bin/migro`. Copy that file anywhere in your $PATH
+That will build `bin/migro`. Copy that file to anywhere in your $PATH
 
 ## Usage
 
@@ -35,6 +41,8 @@ Migration files can be named using one of the following patterns:
 * `001_some_text.yml`, `201802240803-some-text.yml` - numeric prefix plus text, will be executed in order of the numeric prefix first, then alphabetical order if same numeric prefix
 
 ### Migration files
+
+See the main article on: [Migrations](Migrations.md)
 
 `migro` currently only supports YAML migrations of the form
 
@@ -62,7 +70,7 @@ up:
       table: users
       rows:
         - username: system
-        - password_hash: b37e50cedcd3e3f1ff64f4afc0422084ae694253cf399326868e07a35f4a45fb
+          password_hash: b37e50cedcd3e3f1ff64f4afc0422084ae694253cf399326868e07a35f4a45fb
 ```
 
 Which is equivalent to running the following SQL commands:
@@ -76,8 +84,10 @@ INSERT INTO users (username, password_hash) VALUES ('system', 'b37e50cedcd3e3f1f
 
 TODO:
 
+* [x] Support for `sql:` changes in YAML migrations
+* [x] Improved CLI, e.g. `migro up`, `migro logs`
 * [ ] Support for `.sql` migrations ala `micrate`
-* [ ] Improved CLI, e.g. `migro up`, `migro down`, `migro rollback --to 042-some.yml`
+* [ ] Rollback `migro down`, `migro rollback --to 042-some.yml`
 
 ## Contributing
 
