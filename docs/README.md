@@ -18,18 +18,18 @@ Requirements:
 
 ##### Clone this repository
 
-```
-git clone https://github.com/aisrael/migro.git
-cd migro
-```
-
-##### Build the executable and place it in your $PATH
-
-```
-shards build --release
+```bash
+$ git clone https://github.com/aisrael/migro.git
+$ cd migro
 ```
 
-That will build `bin/migro`. Copy that file to anywhere in your $PATH
+##### Build the executable and place it in your `$PATH`
+
+```bash
+$ shards build --release
+```
+
+That will build `bin/migro`. Copy that file to anywhere in your `$PATH`
 
 ## Usage
 
@@ -46,7 +46,7 @@ See the main article on: [Migrations](Migrations.md)
 
 `migro` currently only supports YAML migrations of the form
 
-```
+```yaml
 metadata:
   version: 0.1
 changes:
@@ -75,7 +75,7 @@ up:
 
 Which is equivalent to running the following SQL commands:
 
-```
+```sql
 CREATE TABLE users (id SERIAL NOT NULL PRIMARY KEY, username VARCHAR(40) NOT NULL, password_hash CHAR(128) NOT NULL);
 INSERT INTO users (username, password_hash) VALUES ('system', 'b37e50cedcd3e3f1ff64f4afc0422084ae694253cf399326868e07a35f4a45fb');
 ```
