@@ -84,6 +84,11 @@ abstract class Command
       @@subcommands[aliaz.to_s] = sub if aliaz
     end
 
+    @@default_command : (String | Symbol)?
+    def self.default_command(name : String | Symbol)
+      @@default_command = name.to_s
+    end
+
     def self.run
       self.new(Env.new, nil).run
     end
@@ -109,9 +114,21 @@ abstract class Command
           handle_possible_command(o)
         end
       end
-      cmd = @command
+      cmd = if @command.nil?
+        if @@default_command
+          if @@subcommands.has_key?(@@default_command)
+            @@subcommands[@@default_command]
+          else
+            STDERR.puts %(No command "#{@@default_command}" registered!)
+            exit 1
+          end
+        end
+      else
+        @command
+      end
       if cmd.nil?
         STDERR.puts %(Don't know how to handle "#{args.join(" ")}")
+        exit 1
       else
         clazz = cmd.clazz
         clazz.new(env, self).run

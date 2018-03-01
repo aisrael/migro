@@ -1,10 +1,11 @@
+require "./migro/version"
 require "./migro/*"
 require "./command"
 
 class Main < Command::Main
 
   short_description "migrō - a database migration tool"
-  version "0.2"
+  version Migro::VERSION
 
   flag "database-url",
         description: "Use the given database url. Defaults to $DATABASE_URL if not given",
@@ -12,6 +13,7 @@ class Main < Command::Main
   # command new: New, description: "Creates a new migration file"
   command up: Up, description: "Executes all new migrations going 'up'"
   command logs: Logs, description: "Displays the database migration log", alias: "log"
+  default_command :help
 
   class New < ::Command
     def run
