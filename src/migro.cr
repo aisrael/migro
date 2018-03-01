@@ -1,10 +1,11 @@
+require "./migro/version"
 require "./migro/*"
 require "./command"
 
 class Main < Command::Main
 
   short_description "migrō - a database migration tool"
-  version "0.2"
+  version Migro::VERSION
 
   flag "database-url",
         description: "Use the given database url. Defaults to $DATABASE_URL if not given",

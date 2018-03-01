@@ -1,0 +1,11 @@
+FROM crystallang/crystal as builder
+RUN mkdir /migro
+WORKDIR /migro
+COPY shard.* /migro/
+RUN shards
+COPY . /migro/
+RUN crystal build --release --static src/migro.cr
+
+FROM ubuntu:16.04
+COPY --from=builder /migro/migro /bin/
+ENTRYPOINT [ "/bin/migro" ]
