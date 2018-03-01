@@ -12,6 +12,7 @@ class Main < Command::Main
   # command new: New, description: "Creates a new migration file"
   command up: Up, description: "Executes all new migrations going 'up'"
   command logs: Logs, description: "Displays the database migration log", alias: "log"
+  default_command :help
 
   class New < ::Command
     def run
