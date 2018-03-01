@@ -4,8 +4,8 @@ WORKDIR /migro
 COPY shard.* /migro/
 RUN shards
 COPY . /migro/
-RUN crystal build --release --static src/migro.cr
+RUN shards build --release --static
 
 FROM ubuntu:16.04
-COPY --from=builder /migro/migro /bin/
+COPY --from=builder /migro/bin/migro /bin/
 ENTRYPOINT [ "/bin/migro" ]
