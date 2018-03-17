@@ -1,5 +1,5 @@
 name: migro
-version: 0.1.0
+version: 0.2.3
 
 authors:
   - Alistair A. Israel <aisrael@gmail.com>
@@ -15,7 +15,7 @@ license: MIT
 dependencies:
   cql:
     github: aisrael/cql
-    version: 0.1.1
+    version: 0.1.2
   logging:
     github: aisrael/logging.cr
     version: 0.1
