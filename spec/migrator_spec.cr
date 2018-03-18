@@ -18,6 +18,7 @@ describe Migro::Migrator do
   describe "migrations_log" do
     it "is an array of Migro::MigrationLog" do
       migrator = Migro::Migrator.new(DATABASE_URL)
+      migrator.logs
       log = migrator.migrations_log
       log.should be_a(Array(Migro::MigrationLog))
     end
