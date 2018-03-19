@@ -1,4 +1,4 @@
-FROM ysbaddaden/crystal-alpine:0.24.1 as builder
+FROM ysbaddaden/crystal-alpine:0.24.2 as builder
 RUN mkdir /migro
 WORKDIR /migro
 RUN apk add --update openssl-dev yaml-dev libxml2-dev
