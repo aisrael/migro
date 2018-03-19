@@ -1,3 +1,3 @@
 module Migro
-  VERSION = {{ `cat ./shard.yml|grep ^version:|awk '{print $2}'`.stringify }}
+  VERSION = {{ `cat ./shard.yml|awk '/^version:/ {print $2}'`.stringify }}
 end
