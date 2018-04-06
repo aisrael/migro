@@ -111,8 +111,12 @@ class Migro::Migrator
 
   private def verify_migration_log_integrity : Result(Int32)
     logs = migrations_log
-    n = logs.size
-    (0...n).each do |i|
+    n_log_entries = logs.size
+    n_migrations = migrations.size
+    if n_migrations < n_log_entries
+      return Result(Int32).failure(%(Migrations log has #{n_log_entries} entries, but can only find #{n_migrations} migrations!))
+    end
+    (0...n_log_entries).each do |i|
       log = logs[i]
       file = migrations[i]
       if file.filename != log.filename
@@ -122,7 +126,7 @@ class Migro::Migrator
         return Result(Int32).failure(%(Migration file "#{log.filename}" has changed (expected checksum #{log.checksum} != #{file.checksum}), cowardly refusing to proceed))
       end
     end
-    Result.success(n)
+    Result.success(n_log_entries)
   end
 
   private def execute_new_migrations
