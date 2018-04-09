@@ -8,34 +8,56 @@ struct Migro::MigrationFile
   getter :extension
 
   @numeric_prefix : String?
-  @text : String
+  @text : String?
   @extension : String?
 
-  def initialize(@filename : String)
-    if /^(\d+[-_])?(.+)$/ =~ filename
-      prefix = $1?
-      suffix = $2
-      @numeric_prefix = prefix[0...-1] if prefix
-      @extension = suffix.split(".").last
-      if @extension
-        @text = suffix.chomp(".#{@extension}").not_nil!
-      else
-        @text = suffix.not_nil!
+  def initialize(filename : String)
+    @filename = filename
+    @extension = File.extname(filename)[1..-1]
+    basename = if i = filename.rindex(".")
+      filename[0...i]
+    else
+      filename
+    end
+    if /^(\d+)/ =~ basename
+      prefix = $1.not_nil!
+      @numeric_prefix = prefix
+      if prefix.size + 1 < basename.size
+        @text = basename[(prefix.size + 1)..-1]
       end
     else
-      raise %(Don't know how to handle migration "#{filename}"!)
+      @text = basename
     end
   end
 
   def <=>(other)
-    if other.numeric_prefix == @numeric_prefix
-      @text <=> other.text
+    this_n = @numeric_prefix
+    other_n = other.numeric_prefix
+    if this_n == other_n
+      this_text = @text
+      other_text = other.text
+      case
+      when this_text && other_text
+        this_text <=> other_text
+      when this_text
+        1
+      when other_text
+        -1
+      else
+        0
+      end
     else
-      this_n = @numeric_prefix
-      other_n = other.numeric_prefix
       case
       when this_n && other_n
-        this_n.to_i64 <=> other_n.to_i64
+        this_i = this_n.to_i64
+        other_i = other_n.to_i64
+        # if the numeric prefixes are numerically equal
+        if this_i == other_i
+          # treat as strings again
+          this_n <=> other_n
+        else
+          this_i <=> other_i
+        end
       when this_n
         1
       when other_n

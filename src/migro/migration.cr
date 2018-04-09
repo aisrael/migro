@@ -28,18 +28,18 @@ abstract struct Migro::Migration
   alias InsertRow = Hash(String | Symbol, SQLType)
   alias InsertRows = Array(InsertRow)
 
-  @@known_extensions = {} of String => Migro::Migration.class
-  class_getter :known_extensions
-
   def self.load_from_file(migration_file : MigrationFile, full_path_to_file : String) : Result(Migration)
     unless File.exists?(full_path_to_file) && File.file?(full_path_to_file) && File.readable?(full_path_to_file)
       return Result(Migration).failure(%(File "#{full_path_to_file}" does not exist or cannot be read!))
     end
     extension = migration_file.extension ? migration_file.extension.not_nil!.downcase : ""
-    if @@known_extensions.has_key?(extension)
-      @@known_extensions[extension].load_from_file(migration_file, full_path_to_file)
+    case extension
+    when "sql"
+      SqlMigration.load_from_file(migration_file, full_path_to_file)
+    when "yaml", "yml"
+      YamlMigration.load_from_file(migration_file, full_path_to_file)
     else
-      return Result(Migration).failure(%(Don't know how to handle file of type "#{migration_file.extension}"!))
+      return Result(Migration).failure(%(Don't know how to handle file of type "#{extension}"!))
     end
   rescue e : IO::Error
     Result(Migration).failure(e.message || e.class.to_s)

@@ -27,6 +27,9 @@ class Migro::Migrator
     raise %(Path #{@migration_files_dir_full_path} is not a directory!) unless File.directory?(@migration_files_dir_full_path)
     raise %(Path #{@migration_files_dir_full_path} cannot be read!) unless File.readable?(@migration_files_dir_full_path)
     @migration_files = scan_for_migrations
+    @migration_files.each do |mf|
+      p mf
+    end
     @database = CQL.connect(@database_url)
   end
 
