@@ -139,23 +139,9 @@ class Migro::Migrator
       return
     end
     new_migrations.each do |migration|
-      execute_migration(migration)
+      migration.execute
       record_into_log(migration)
     end
-  end
-
-  private def execute_migration(migration)
-    migration.changes.each do |change|
-      execute_change(change)
-    end
-    migration.up.each do |change|
-      execute_change(change)
-    end
-  end
-
-  private def execute_change(change : Migration::Change)
-    debug(change.inspect)
-    change.execute(@database)
   end
 
   private def record_into_log(migration)

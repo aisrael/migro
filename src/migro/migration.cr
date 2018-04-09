@@ -20,6 +20,15 @@ abstract struct Migro::Migration
     @metadata = {version: version}
   end
 
+  def execute(database : CQL::Database)
+    changes.each do |change|
+      change.execute(database)
+    end
+    up.each do |change|
+      change.execute(database)
+    end
+  end
+
   abstract struct Change
     abstract def execute(database : CQL::Database)
   end

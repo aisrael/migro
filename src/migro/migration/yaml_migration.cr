@@ -1,7 +1,5 @@
 struct Migro::Migration::YamlMigration < Migro::Migration
   getter :yaml
-  getter :changes
-  getter :up
 
   private def all_as_h(array : Array(YAML::Type)) : Array(Hash(YAML::Type, YAML::Type))
     array.map do |e|
