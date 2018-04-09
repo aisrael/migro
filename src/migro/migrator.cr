@@ -139,7 +139,7 @@ class Migro::Migrator
       return
     end
     new_migrations.each do |migration|
-      migration.execute
+      migration.execute(@database)
       record_into_log(migration)
     end
   end
