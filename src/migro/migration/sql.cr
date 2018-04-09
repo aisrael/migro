@@ -3,6 +3,8 @@ struct Migro::Migration::Sql < Migro::Migration::Change
   def initialize(@sql : String)
   end
   def execute(database : CQL::Database)
-    database.exec(@sql)
+    pp @sql
+    exec_result = database.exec(@sql)
+    pp exec_result
   end
 end
