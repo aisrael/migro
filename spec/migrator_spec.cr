@@ -18,8 +18,22 @@ describe Migro::Migrator do
     migrations[7].filename.should eq("20180215153410-seed.yml")
   end
 
+  it "can handle a single SQL migration up" do
+    recreate_database
+    migrator = Migro::Migrator.new(DATABASE_URL, migrations_dir: "test/fixtures/scenarios/single_sql_migration")
+    migrator.migration_files.empty?.should be_false
+    migrations = migrator.migrations
+    migrations.empty?.should be_false
+    migrations.size.should eq(1)
+    migrations[0].filename.should eq("1.sql")
+    migrator.up
+    db = CQL.connect(DATABASE_URL)
+    db.table_exists?("foo").should be_true
+  end
+
   describe "migrations_log" do
     it "is an array of Migro::MigrationLog" do
+      recreate_database
       migrator = Migro::Migrator.new(DATABASE_URL)
       migrator.logs
       log = migrator.migrations_log

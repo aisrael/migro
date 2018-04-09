@@ -22,11 +22,9 @@ abstract struct Migro::Migration
 
   def up(database : CQL::Database)
     changes.each do |change|
-      pp change
       change.execute(database)
     end
     up.each do |change|
-      pp change
       change.execute(database)
     end
   end

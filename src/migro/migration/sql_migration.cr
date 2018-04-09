@@ -15,8 +15,6 @@ struct Migro::Migration::SqlMigration < Migro::Migration
     section = [] of String
 
     raw.each_line do |line|
-      pp line
-      pp in_section
       if line.starts_with?(MICRATE_PREFIX)
         if in_section
           case in_section
@@ -29,7 +27,6 @@ struct Migro::Migration::SqlMigration < Migro::Migration
         end
 
         cmd = line[MICRATE_PREFIX.size..-1].strip.downcase
-        pp cmd
         case cmd
         when "up"
           in_section = :up

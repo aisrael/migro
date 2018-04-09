@@ -18,7 +18,6 @@ def recreate_database
 
   database_name = path.starts_with?("/") ? path[1..-1] : path
   url_without_path = DATABASE_URL[0..-path.size-1]
-  puts %(Using "#{url_without_path}")
 
   # TODO MySQL?
   DB.open(url_without_path) do |db|
