@@ -40,7 +40,7 @@ struct Migro::Migration::YamlMigration < Migro::Migration
         result << CreateTable.new(table)
       elsif change_as_h.has_key?("sql")
         sql = change["sql"].as_s
-        result << Sql.new(sql)
+        result << Sql.new(sql, nil)
       elsif change_as_h.has_key?("insert")
         insert = change["insert"]
         h = change["insert"].as_h

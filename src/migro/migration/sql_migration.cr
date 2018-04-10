@@ -19,10 +19,11 @@ struct Migro::Migration::SqlMigration < Migro::Migration
         if in_section
           case in_section
           when :up
-            up << Migro::Migration::Sql.new(section.join("\n"))
+            up << Migro::Migration::Sql.new(section.join("\n"), nil)
           when :down
-            down << Migro::Migration::Sql.new(section.join("\n"))
+            down << Migro::Migration::Sql.new(nil, section.join("\n"))
           end
+          section = [] of String
           in_section = nil
         end
 
@@ -40,9 +41,9 @@ struct Migro::Migration::SqlMigration < Migro::Migration
     if in_section
       case in_section
       when :up
-        up << Migro::Migration::Sql.new(section.join("\n"))
+        up << Migro::Migration::Sql.new(section.join("\n"), nil)
       when :down
-        down << Migro::Migration::Sql.new(section.join("\n"))
+        down << Migro::Migration::Sql.new(nil, section.join("\n"))
       end
     end
   end

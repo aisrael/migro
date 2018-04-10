@@ -30,7 +30,11 @@ class Migro::Migrator
     @database = CQL.connect(@database_url)
   end
 
-  {% for command in %w[up logs] %}
+  def close_database
+    @database.close
+  end
+
+  {% for command in %w[up down logs] %}
     def self.{{command.id}}(database_url : String)
       self.new(database_url).{{command.id}}
     end
@@ -44,6 +48,17 @@ class Migro::Migrator
       exit 1
     when Success
       execute_new_migrations
+    end
+  end
+
+  def down(n = 1)
+    check_and_ensure_migrations_log_table_exists
+    case result = verify_migration_log_integrity
+    when Failure
+      STDERR.puts result.message
+      exit 1
+    when Success
+      rollback(n)
     end
   end
 
@@ -139,6 +154,31 @@ class Migro::Migrator
       migration.up(@database)
       record_into_log(migration)
     end
+  end
+
+  private def rollback(n : Int32)
+    debug "rollback(#{n})"
+    logs_to_rollback = migrations_log[migrations_log.size - n..-1]
+    pp logs_to_rollback
+    migrations_to_rollback = migrations[migrations_log.size - n..-1]
+    pp migrations_to_rollback
+    logs_and_migrations = logs_to_rollback.zip(migrations_to_rollback)
+    logs_and_migrations.reverse.each do |log, migration|
+      migration.down(@database)
+      remove_from_log(log)
+    end
+  end
+
+  private def remove_from_log(log)
+    # Need to 'finesse' the timestamp serialization since crystal_pg encodes using ISO 8601
+    # which doesn't match what PostgreSQL 'sees'
+    timestamp_in_pg_format = log.timestamp.to_s("%Y-%m-%d %H:%M:%S.%6N")
+
+    sql = "DELETE FROM database_migrations_log WHERE timestamp = $1 AND filename = $2 AND checksum = $3"
+    debug %(DELETE FROM database_migrations_log WHERE timestamp = #{timestamp_in_pg_format} AND filename = #{log.filename} AND checksum = #{log.checksum})
+    exec_result = @database.exec(sql, timestamp_in_pg_format, log.filename, log.checksum)
+    rows_affected = exec_result.rows_affected
+    raise %(Expected 1 row deleted, got #{rows_affected}!) unless rows_affected == 1
   end
 
   private def record_into_log(migration)

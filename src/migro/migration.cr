@@ -22,15 +22,25 @@ abstract struct Migro::Migration
 
   def up(database : CQL::Database)
     changes.each do |change|
-      change.execute(database)
+      change.up(database)
     end
     up.each do |change|
-      change.execute(database)
+      change.up(database)
+    end
+  end
+
+  def down(database : CQL::Database)
+    changes.each do |change|
+      change.down(database)
+    end
+    down.each do |change|
+      change.down(database)
     end
   end
 
   abstract struct Change
-    abstract def execute(database : CQL::Database)
+    abstract def up(database : CQL::Database)
+    abstract def down(database : CQL::Database)
   end
 
   alias SQLType = String | Char | Int8 | Int32 | Int64
