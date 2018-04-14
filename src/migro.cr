@@ -11,7 +11,8 @@ class Main < Command::Main
         description: "Use the given database url. Defaults to $DATABASE_URL if not given",
         expects_value: true
   # command new: New, description: "Creates a new migration file"
-  command up: Up, description: "Executes all new migrations going 'up'"
+  command up: Up, description: "Executes all new migrations"
+  command down: Down, description: "Rollsback previous migrations"
   command logs: Logs, description: "Displays the database migration log", alias: "log"
   default_command :help
 
@@ -30,6 +31,17 @@ class Main < Command::Main
         exit 1
       end
       Migro::Migrator.up(db_url)
+    end
+  end
+
+  class Down < ::Command
+    def run
+      db_url = options["database-url"]? || ENV["DATABASE_URL"]?
+      unless db_url
+        STDERR.puts "No --database-url flag given and no $DATABASE_URL environment variable defined!"
+        exit 1
+      end
+      Migro::Migrator.down(db_url)
     end
   end
 
