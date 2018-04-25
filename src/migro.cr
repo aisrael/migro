@@ -10,7 +10,7 @@ class Main < Command::Main
   flag "database-url",
         description: "Use the given database url. Defaults to $DATABASE_URL if not given",
         expects_value: true
-  # command new: New, description: "Creates a new migration file"
+  command new: New, description: "Creates a new migration file"
   command up: Up, description: "Executes all new migrations"
   command down: Down, description: "Rollsback previous migrations"
   command logs: Logs, description: "Displays the database migration log", alias: "log"
@@ -18,8 +18,24 @@ class Main < Command::Main
 
   class New < ::Command
     def run
-      p args: args
-      puts args.join("-")
+      now = Time.now
+      now_s = now.to_s("%Y%m%d%H%M%S")
+      parts = [now_s] + args.map {|s| s.underscore.gsub(/\s+/, "_")}
+      filename = "#{parts.join("-")}.yml"
+      full_path_to_file = File.join(Migro::Migrator::DEFAULT_MIGRATIONS_DIR, filename)
+      if File.exists?(full_path_to_file)
+        STDERR.puts "Migration file #{full_path_to_file} already exists!"
+        exit 1
+      end
+      contents = <<-EOF
+      ---
+      metadata:
+        version: 0.1
+        description: #{args.join(" ")}
+      changes:
+        # Add YAML changes here
+      EOF
+      File.write(full_path_to_file, contents)
     end
   end
 
