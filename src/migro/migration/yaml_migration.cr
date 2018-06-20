@@ -1,9 +1,9 @@
 struct Migro::Migration::YamlMigration < Migro::Migration
   getter :yaml
 
-  private def all_as_h(array : Array(YAML::Type)) : Array(Hash(YAML::Type, YAML::Type))
+  private def all_as_h(array : Array(YAML::Any)) : Array(Hash(YAML::Any, YAML::Any))
     array.map do |e|
-      raise "Expecting Hash(YAML::Type, YAML::Type), got #{e.class}!" unless e.is_a?(Hash(YAML::Type, YAML::Type))
+      raise "Expecting Hash(YAML::Any, YAML::Any), got #{e.class}!" unless e.is_a?(Hash(YAML::Any, YAML::Any))
       e
     end
   end
@@ -11,7 +11,7 @@ struct Migro::Migration::YamlMigration < Migro::Migration
   def initialize(migration_file : MigrationFile, filename : String, checksum : String, @yaml : YAML::Any)
     super(migration_file, filename, checksum)
     unless @yaml.raw.nil?
-      if @yaml.raw.is_a?(Hash(YAML::Type, YAML::Type))
+      if @yaml.raw.is_a?(Hash(YAML::Any, YAML::Any))
         parse_yaml(@yaml.as_h)
       end
     end
@@ -24,14 +24,14 @@ struct Migro::Migration::YamlMigration < Migro::Migration
       end
     end
     if hash.has_key?("changes")
-      @changes += parse_changes(@yaml["changes"])
+      @changes += parse_changes(@yaml["changes"].as_a)
     end
     if hash.has_key?("up")
-      @up += parse_changes(@yaml["up"])
+      @up += parse_changes(@yaml["up"].as_a)
     end
   end
 
-  def parse_changes(changes)
+  def parse_changes(changes : Array(YAML::Any))
     result = [] of Change
     changes.each do |change|
       change_as_h = change.as_h
@@ -48,8 +48,8 @@ struct Migro::Migration::YamlMigration < Migro::Migration
         table_name = insert["table"].as_s
         insert_rows = InsertRows.new
         if h.has_key?("rows")
-          insert["rows"].each do |row|
-            if row.raw.is_a?(Hash(YAML::Type, YAML::Type))
+          insert["rows"].as_a.each do |row|
+            if row.raw.is_a?(Hash(YAML::Any, YAML::Any))
               keys = row.as_h.keys.map(&.to_s)
               insert_row = InsertRow.new
               keys.each do |key|

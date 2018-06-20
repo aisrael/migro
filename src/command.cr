@@ -15,7 +15,6 @@ abstract class Command
     getter :args, :flags, :options
   end
 
-
   @parent : Command?
   getter :env, :parent
 
