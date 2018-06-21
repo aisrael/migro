@@ -20,7 +20,7 @@ struct Migro::Migration::YamlMigration < Migro::Migration
   def parse_yaml(hash)
     if hash.has_key?("metadata")
       if @yaml["metadata"]["version"]?
-        version = @yaml["metadata"]["version"].as_s
+        version = @yaml["metadata"]["version"].to_s
       end
     end
     if hash.has_key?("changes")
