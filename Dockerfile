@@ -1,13 +1,16 @@
-FROM ysbaddaden/crystal-alpine:0.24.2 as builder
+FROM alpine:edge as builder
+RUN apk add --update crystal shards openssl-dev yaml-dev libxml2-dev musl-dev
 RUN mkdir /migro
 WORKDIR /migro
-RUN apk add --update openssl-dev yaml-dev libxml2-dev
 COPY shard.* /migro/
-RUN shards
+RUN shards update
 COPY . /migro/
-RUN shards build --release
+# Workaround until shards 0.8.1
+# RUN shards build --release
+RUN crystal build --release src/migro.cr
 
-FROM alpine:3.7
-RUN apk add --update openssl yaml pcre gc libevent libgcc
-COPY --from=builder /migro/bin/migro /bin/
-ENTRYPOINT [ "/bin/migro" ]
+FROM alpine:edge
+RUN apk add --update crystal openssl yaml pcre gc libevent libgcc
+# COPY --from=builder /migro/bin/migro /bin/
+COPY --from=builder /migro/migro /usr/bin/
+ENTRYPOINT [ "/usr/bin/migro" ]
