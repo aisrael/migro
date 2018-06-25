@@ -17,7 +17,15 @@ class Main < Command::Main
   default_command :help
 
   class New < ::Command
+
     def run
+      if args.empty?
+        puts <<-USAGE
+        Usage:
+          migro new text
+        USAGE
+        exit 1
+      end
       now = Time.now
       now_s = now.to_s("%Y%m%d%H%M%S")
       parts = [now_s] + args.map {|s| s.underscore.gsub(/\s+/, "_")}
@@ -36,6 +44,7 @@ class Main < Command::Main
         # Add YAML changes here
       EOF
       File.write(full_path_to_file, contents)
+      puts "Created #{full_path_to_file}"
     end
   end
 
