@@ -1,0 +1,6 @@
+.*
+Dockerfile
+*.Dockerfile
+lib/
+test/
+spec/
