@@ -17,6 +17,20 @@ git clone https://github.com/aisrael/migro.git
 cd migro
 ```
 
+#### Run the tests
+
+To run the tests, we use Docker + Compose to bring up a PostgreSQL environment. First go:
+
+```
+docker-compose up
+```
+
+Then, in another terminal
+
+```
+DATABASE_URL=postgres://migro:secret@localhost/migro_test crystal spec
+```
+
 ##### Build the executable and place it in your $PATH
 
 ```
