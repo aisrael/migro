@@ -28,8 +28,8 @@ class Main < Command::Main
       end
       now = Time.now
       now_s = now.to_s("%Y%m%d%H%M%S")
-      parts = [now_s] + args.map {|s| s.underscore.gsub(/\s+/, "_")}
-      filename = "#{parts.join("-")}.yml"
+      parts = args.map {|s| s.underscore.gsub(/\s+/, "_")}
+      filename = "#{now_s}-#{parts.join("_")}.yml"
       full_path_to_file = File.join(Migro::Migrator::DEFAULT_MIGRATIONS_DIR, filename)
       if File.exists?(full_path_to_file)
         STDERR.puts "Migration file #{full_path_to_file} already exists!"
