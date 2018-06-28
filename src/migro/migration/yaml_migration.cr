@@ -1,4 +1,7 @@
+require "logging"
+
 struct Migro::Migration::YamlMigration < Migro::Migration
+  include Logging
   getter :yaml
 
   private def all_as_h(array : Array(YAML::Any)) : Array(Hash(YAML::Any, YAML::Any))
@@ -36,8 +39,13 @@ struct Migro::Migration::YamlMigration < Migro::Migration
     changes.each do |change|
       change_as_h = change.as_h
       if change_as_h.has_key?("create_table")
-        table = CQL::Table.from_yaml(change["create_table"])
-        result << CreateTable.new(table)
+        create_table_body = change_as_h["create_table"]
+        if create_table_body.nil?
+          raise "create_table: with no body! Did you forget to indent?"
+        else
+          table = CQL::Table.from_yaml(create_table_body)
+          result << CreateTable.new(table)
+        end
       elsif change_as_h.has_key?("sql")
         sql = change["sql"].as_s
         result << Sql.new(sql, nil)
