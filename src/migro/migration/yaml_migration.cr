@@ -24,6 +24,9 @@ struct Migro::Migration::YamlMigration < Migro::Migration
     if hash.has_key?("metadata")
       if @yaml["metadata"]["version"]?
         version = @yaml["metadata"]["version"].to_s
+        unless Migro::SUPPORTED_MIGRATION_VERSIONS.includes?(version)
+          raise Exception.new(%(Unsupported migration version "#{version}"!))
+        end
       end
     end
     if hash.has_key?("changes")
