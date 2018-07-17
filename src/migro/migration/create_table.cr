@@ -6,6 +6,6 @@ struct Migro::Migration::CreateTable < Migro::Migration::Change
     database.create_table(@table).exec
   end
   def down(database : CQL::Database)
-    database.delete_table(@table).exec
+    database.drop_table(@table).exec
   end
 end
