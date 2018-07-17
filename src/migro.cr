@@ -3,13 +3,12 @@ require "./migro/*"
 require "./command"
 
 class Main < Command::Main
-
   short_description "migrō - a database migration tool"
   version Migro::VERSION
 
   flag "database-url",
-        description: "Use the given database url. Defaults to $DATABASE_URL if not given",
-        expects_value: true
+    description: "Use the given database url. Defaults to $DATABASE_URL if not given",
+    expects_value: true
   command new: New, description: "Creates a new migration file"
   command up: Up, description: "Executes all new migrations"
   command down: Down, description: "Rollsback previous migrations"
@@ -17,7 +16,6 @@ class Main < Command::Main
   default_command :help
 
   class New < ::Command
-
     def run
       if args.empty?
         puts <<-USAGE
@@ -28,7 +26,7 @@ class Main < Command::Main
       end
       now = Time.now
       now_s = now.to_s("%Y%m%d%H%M%S")
-      parts = args.map {|s| s.underscore.gsub(/\s+/, "_")}
+      parts = args.map { |s| s.underscore.gsub(/\s+/, "_") }
       filename = "#{now_s}-#{parts.join("_")}.yml"
       full_path_to_file = File.join(Migro::Migrator::DEFAULT_MIGRATIONS_DIR, filename)
       if File.exists?(full_path_to_file)

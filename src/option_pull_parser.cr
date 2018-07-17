@@ -1,5 +1,6 @@
 struct Flag
   getter :name
+
   def initialize(@name : String)
   end
 end
@@ -7,6 +8,7 @@ end
 struct FlagWithValue
   getter :name
   getter :value
+
   def initialize(@name : String, @value : String?)
   end
 end
@@ -28,8 +30,10 @@ class OptionPullParser
     getter :short
     getter :long
     getter :expects_value
+
     def initialize(@name : String, @description : String?, @short : String?, @long : String?, @expects_value : Bool = false)
     end
+
     def expects_value?
       @expects_value
     end
@@ -74,7 +78,7 @@ class OptionPullParser
       i = raw.index("=")
       if i
         long = raw[0...i]
-        value = raw[(i+1)..-1]
+        value = raw[(i + 1)..-1]
       else
         long = raw
       end

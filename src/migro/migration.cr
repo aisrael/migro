@@ -66,13 +66,13 @@ module Migro
     rescue e : IO::Error
       Result(Migration).failure(e.message || e.class.to_s)
     end
-
   end
 end
 
 # A simple struct to hold the database migration log records
 struct Migro::MigrationLog
   getter :timestamp, :filename, :checksum
+
   def initialize(@timestamp : Time, @filename : String, @checksum : String)
   end
 end

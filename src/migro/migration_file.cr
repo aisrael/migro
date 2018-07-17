@@ -14,12 +14,12 @@ struct Migro::MigrationFile
   def initialize(filename : String)
     @filename = filename
     basename = if i = filename.rindex(".")
-      @extension = filename[(i + 1)..-1]
-      filename[0...i]
-    else
-      @extension = ""
-      filename
-    end
+                 @extension = filename[(i + 1)..-1]
+                 filename[0...i]
+               else
+                 @extension = ""
+                 filename
+               end
     if /^(\d+)/ =~ basename
       prefix = $1.not_nil!
       @numeric_prefix = prefix

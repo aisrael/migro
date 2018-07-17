@@ -2,12 +2,12 @@ require "./option_pull_parser"
 
 struct SubCommandDecl
   getter :name, :clazz, :description, :alias
+
   def initialize(@name : String, @clazz : ::Command.class, @description : String, @alias : String? = nil)
   end
 end
 
 abstract class Command
-
   struct Env
     @args = [] of String
     @flags = {} of String => Bool
@@ -28,36 +28,42 @@ abstract class Command
   abstract def run
 
   class Main < Command
-
     @@subcommands = {} of String => SubCommandDecl
     class_getter :subcommands
+
     def subcommands
       @@subcommands
     end
 
     @@allowed = [] of OptionPullParser::AllowedFlag
     class_getter :allowed
+
     def self.flag(name : String, description : String, expects_value : Bool? = false)
       @@allowed << OptionPullParser::AllowedFlag.new(name, description, nil, name, expects_value)
     end
+
     def allowed
       @@allowed
     end
 
     @@short_description : String? = nil
     class_getter :short_description
+
     def short_description : String?
       @@short_description
     end
+
     def self.short_description(description : String)
       @@short_description = description
     end
 
     @@version : String? = nil
     class_getter :version
+
     def version : String?
       @@version
     end
+
     class Version < Command
       def run
         if !parent.nil? && parent.is_a?(Command::Main)
@@ -66,6 +72,7 @@ abstract class Command
         end
       end
     end
+
     def self.version(v : String)
       @@version = v
       command("version", Version, "displays the program version")
@@ -84,6 +91,7 @@ abstract class Command
     end
 
     @@default_command : (String | Symbol)?
+
     def self.default_command(name : String | Symbol)
       @@default_command = name.to_s
     end
@@ -114,17 +122,17 @@ abstract class Command
         end
       end
       cmd = if @command.nil?
-        if @@default_command
-          if @@subcommands.has_key?(@@default_command)
-            @@subcommands[@@default_command]
-          else
-            STDERR.puts %(No command "#{@@default_command}" registered!)
-            exit 1
-          end
-        end
-      else
-        @command
-      end
+              if @@default_command
+                if @@subcommands.has_key?(@@default_command)
+                  @@subcommands[@@default_command]
+                else
+                  STDERR.puts %(No command "#{@@default_command}" registered!)
+                  exit 1
+                end
+              end
+            else
+              @command
+            end
       if cmd.nil?
         STDERR.puts %(Don't know how to handle "#{args.join(" ")}")
         exit 1
@@ -156,7 +164,7 @@ abstract class Command
           Flags :
           FLAGS
           allowed = main.class.allowed
-          longest_flag = allowed.map {|f| (f.long || "").size}.max
+          longest_flag = allowed.map { |f| (f.long || "").size }.max
           allowed.each do |flag|
             size = (flag.long || "").size
             padding = Array.new(longest_flag - size, " ").join
@@ -173,6 +181,6 @@ abstract class Command
         end
       end
       args << key
-   end
+    end
   end
 end

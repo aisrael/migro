@@ -58,5 +58,4 @@ describe OptionPullParser do
       flag.value.should eq("test")
     end
   end
-
 end

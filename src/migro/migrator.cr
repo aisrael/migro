@@ -19,7 +19,7 @@ class Migro::Migrator
   @migrations : Array(Migration)?
 
   DEFAULT_MIGRATIONS_DIR = File.join("db", "migrations")
-  MIGRATIONS_LOG_TABLE = "database_migrations_log"
+  MIGRATIONS_LOG_TABLE   = "database_migrations_log"
 
   def initialize(@database_url : String, migrations_dir = DEFAULT_MIGRATIONS_DIR, logger = Logger.new(STDOUT))
     @migration_files_dir = migrations_dir
@@ -87,12 +87,19 @@ class Migro::Migrator
     @migrations ||= load_migrations.not_nil!
   end
 
+  @schema : CQL::Schema(MigrationLog)?
+
+  def schema
+    @schema ||= CQL::Schema.new(@database, MigrationLog, MIGRATIONS_LOG_TABLE,
+      timestamp: Time,
+      filename: String,
+      checksum: String
+    )
+  end
+
   def migrations_log : Array(MigrationLog)
     return [] of MigrationLog unless migrations_log_table_exists?
-    @database.query_all("SELECT timestamp, filename, checksum FROM #{MIGRATIONS_LOG_TABLE} ORDER BY timestamp") do |rs|
-      timestamp, filename, checksum = rs.read(Time, String, String)
-      MigrationLog.new(timestamp, filename, checksum)
-    end
+    schema.all
   end
 
   private def load_migrations
@@ -174,15 +181,14 @@ class Migro::Migrator
     # which doesn't match what PostgreSQL 'sees'
     timestamp_in_pg_format = log.timestamp.to_s("%Y-%m-%d %H:%M:%S.%6N")
 
-    sql = "DELETE FROM database_migrations_log WHERE timestamp = $1 AND filename = $2 AND checksum = $3"
-    debug %(DELETE FROM database_migrations_log WHERE timestamp = #{timestamp_in_pg_format} AND filename = #{log.filename} AND checksum = #{log.checksum})
-    exec_result = @database.exec(sql, timestamp_in_pg_format, log.filename, log.checksum)
-    rows_affected = exec_result.rows_affected
+    rows_affected = schema.where(
+      timestamp: timestamp_in_pg_format,
+      filename: log.filename,
+      checksum: log.checksum).delete
     raise %(Expected 1 row deleted, got #{rows_affected}!) unless rows_affected == 1
   end
 
   private def record_into_log(migration)
-    insert = @database.insert("database_migrations_log").columns("filename", "checksum")
-    insert.exec(migration.filename, migration.checksum)
+    schema.insert("filename", "checksum").values(migration.filename, migration.checksum)
   end
 end
