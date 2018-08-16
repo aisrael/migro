@@ -2,7 +2,7 @@ version: 1.0
 shards:
   cql:
     github: aisrael/cql
-    commit: ecd6171629942ac0993db62b62b674f8ce9c5471
+    version: 0.3.1
 
   db:
     github: crystal-lang/crystal-db
