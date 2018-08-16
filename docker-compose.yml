@@ -1,0 +1,13 @@
+version: "3"
+services:
+  postgres:
+    image: postgres:9.6-alpine
+    network_mode: bridge
+    environment:
+      - POSTGRES_USER=migro
+      - POSTGRES_PASSWORD=secret
+      - POSTGRES_DB=migro
+    ports:
+      - 5432:5432
+  redis:
+    image: redis:4.0.8-alpine

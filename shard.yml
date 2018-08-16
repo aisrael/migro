@@ -1,5 +1,5 @@
 name: migro
-version: 0.2.3
+version: 0.3.1
 
 authors:
   - Alistair A. Israel <aisrael@gmail.com>
@@ -8,16 +8,23 @@ targets:
   migro:
     main: src/migro.cr
 
-crystal: 0.24.1
+crystal: 0.25.0
 
 license: MIT
 
 dependencies:
   cql:
     github: aisrael/cql
-    version: 0.1.9
+    branch: develop
   logging:
     github: aisrael/logging.cr
     version: 0.1
   pg:
     github: will/crystal-pg
+    version: 0.15.0
+
+scripts:
+  postinstall: make bin
+
+executables:
+  - migro
