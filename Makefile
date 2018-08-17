@@ -10,7 +10,7 @@ clean:
 install: build
 	mkdir -p $(PREFIX)/bin
 	cp ./bin/migro $(PREFIX)/bin
-bin: build
+migro: build
 	mkdir -p $(SHARD_BIN)
 	cp ./bin/migro $(SHARD_BIN)
 test: build
