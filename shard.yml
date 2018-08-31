@@ -8,17 +8,17 @@ targets:
   migro:
     main: src/migro.cr
 
-crystal: 0.25.0
+crystal: 0.26.1
 
 license: MIT
 
 dependencies:
   cql:
     github: aisrael/cql
-    commit: 79b5048c145d6cda7842ac5bc581c72acc5b0b79
+    version: 0.3.2
   logging:
     github: aisrael/logging.cr
-    version: 0.1
+    version: 0.2
   pg:
     github: will/crystal-pg
     version: 0.15.0
